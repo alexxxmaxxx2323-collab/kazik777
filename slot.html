@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cyber Slot — Jackpot</title>
+<style>
+:root{
+    --cyan:#00f3ff;
+    --pink:#ff00ff;
+    --orange:#ff8e00;
+    --gold:#ffd700;
+    --bg:#06080f;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;user-select:none;}
+body{
+    background:#06080f;
+    background-image:
+        linear-gradient(rgba(0,243,255,.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,243,255,.04) 1px,transparent 1px);
+    background-size:32px 32px;
+    color:#fff;font-family:'Segoe UI',Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+}
+body::before{
+    content:'';position:fixed;inset:0;
+    background:radial-gradient(ellipse 85% 75% at 50% 50%,rgba(0,20,50,.55) 0%,rgba(4,5,14,.9) 100%);
+    pointer-events:none;z-index:0;
+}
+
+.stage{
+    position:relative;z-index:2;
+    display:flex;flex-direction:column;align-items:center;
+}
+
+.machine{
+    position:relative;
+    padding:36px 28px 28px;
+    background:linear-gradient(180deg,rgba(0,4,18,.95) 0%,rgba(0,8,24,.95) 100%);
+    border:3px solid var(--cyan);
+    border-radius:24px;
+    box-shadow:
+        0 0 24px rgba(0,243,255,.5),
+        0 0 60px rgba(0,243,255,.25),
+        inset 0 0 20px rgba(0,243,255,.08);
+}
+
+.brand{
+    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+    padding:6px 22px;
+    background:#06080f;
+    border:2px solid var(--gold);
+    border-radius:10px;
+    font-size:14px;font-weight:900;letter-spacing:3px;
+    color:var(--gold);
+    text-shadow:0 0 8px var(--gold),0 0 16px rgba(255,215,0,.5);
+    box-shadow:0 0 12px rgba(255,215,0,.4);
+}
+
+.reels{
+    display:flex;gap:12px;
+    padding:16px;
+    background:#000;
+    border:2px solid rgba(0,243,255,.4);
+    border-radius:14px;
+    box-shadow:inset 0 0 20px rgba(0,243,255,.15);
+    position:relative;
+}
+
+.reel{
+    width:130px;height:420px;
+    overflow:hidden;
+    background:linear-gradient(180deg,#020412 0%,#06081a 50%,#020412 100%);
+    border:2px solid rgba(0,243,255,.5);
+    border-radius:10px;
+    position:relative;
+    box-shadow:inset 0 0 18px rgba(0,0,0,.7);
+}
+.reel::before,.reel::after{
+    content:'';position:absolute;left:0;right:0;height:60px;z-index:5;pointer-events:none;
+}
+.reel::before{top:0;background:linear-gradient(180deg,#000 0%,rgba(0,0,0,0) 100%);}
+.reel::after{bottom:0;background:linear-gradient(0deg,#000 0%,rgba(0,0,0,0) 100%);}
+
+.strip{
+    position:absolute;top:0;left:0;width:100%;
+    will-change:transform;
+    transform:translateY(0);
+}
+.cell{
+    width:130px;height:140px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:70px;font-weight:900;
+    line-height:1;
+}
+.cell.seven{
+    font-family:'Courier New',monospace;
+    font-size:90px;
+    color:var(--gold);
+    text-shadow:
+        0 0 8px var(--gold),
+        0 0 18px var(--gold),
+        0 0 36px rgba(255,215,0,.7);
+}
+.cell.cherry  {color:#ff3355;text-shadow:0 0 14px #ff3355,0 0 28px rgba(255,51,85,.6);}
+.cell.diamond {color:#7af6ff;text-shadow:0 0 14px #7af6ff,0 0 28px rgba(122,246,255,.6);}
+.cell.bell    {color:#ffd24a;text-shadow:0 0 14px #ffd24a,0 0 28px rgba(255,210,74,.6);}
+.cell.star    {color:#c084ff;text-shadow:0 0 14px #c084ff,0 0 28px rgba(192,132,255,.6);}
+.cell.bar     {color:#ff8e00;text-shadow:0 0 14px #ff8e00,0 0 28px rgba(255,142,0,.6);font-size:42px;font-family:'Courier New',monospace;letter-spacing:2px;}
+
+.payline{
+    position:absolute;left:8px;right:8px;top:50%;height:3px;transform:translateY(-50%);
+    background:linear-gradient(90deg,transparent,var(--pink) 20%,var(--pink) 80%,transparent);
+    box-shadow:0 0 10px var(--pink),0 0 20px var(--pink);
+    z-index:10;pointer-events:none;
+    opacity:.85;
+}
+
+.status{
+    margin-top:18px;
+    font-size:14px;letter-spacing:4px;text-transform:uppercase;
+    color:var(--cyan);text-shadow:0 0 8px var(--cyan);
+    height:22px;
+}
+
+/* JACKPOT overlay */
+.jackpot{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:none;z-index:50;
+    opacity:0;
+    background:radial-gradient(circle at center,rgba(255,215,0,.35) 0%,rgba(255,142,0,.18) 40%,rgba(6,8,15,0) 75%);
+    transition:opacity .4s ease;
+}
+.jackpot.show{opacity:1;}
+.jackpot-text{
+    font-family:'Courier New',monospace;
+    font-size:96px;font-weight:900;letter-spacing:8px;
+    color:var(--gold);
+    text-shadow:
+        0 0 16px var(--gold),
+        0 0 32px var(--gold),
+        0 0 64px rgba(255,215,0,.8),
+        0 0 100px rgba(255,142,0,.6);
+    transform:scale(.4);
+    opacity:0;
+    transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;
+}
+.jackpot.show .jackpot-text{transform:scale(1);opacity:1;animation:jpPulse 1.2s ease-in-out infinite alternate;}
+@keyframes jpPulse{
+    0%{text-shadow:0 0 16px var(--gold),0 0 32px var(--gold),0 0 64px rgba(255,215,0,.8);}
+    100%{text-shadow:0 0 24px var(--gold),0 0 48px var(--gold),0 0 96px rgba(255,215,0,1),0 0 160px rgba(255,142,0,.9);}
+}
+
+/* Light burst rays */
+.rays{
+    position:absolute;inset:-200px;
+    z-index:45;pointer-events:none;
+    opacity:0;
+    background:conic-gradient(
+        from 0deg,
+        rgba(255,215,0,.6) 0deg,transparent 8deg,
+        rgba(255,215,0,.6) 18deg,transparent 26deg,
+        rgba(255,215,0,.6) 40deg,transparent 48deg,
+        rgba(255,215,0,.6) 65deg,transparent 73deg,
+        rgba(255,215,0,.6) 90deg,transparent 98deg,
+        rgba(255,215,0,.6) 115deg,transparent 123deg,
+        rgba(255,215,0,.6) 140deg,transparent 148deg,
+        rgba(255,215,0,.6) 165deg,transparent 173deg,
+        rgba(255,215,0,.6) 190deg,transparent 198deg,
+        rgba(255,215,0,.6) 215deg,transparent 223deg,
+        rgba(255,215,0,.6) 240deg,transparent 248deg,
+        rgba(255,215,0,.6) 265deg,transparent 273deg,
+        rgba(255,215,0,.6) 290deg,transparent 298deg,
+        rgba(255,215,0,.6) 315deg,transparent 323deg,
+        rgba(255,215,0,.6) 340deg,transparent 348deg
+    );
+    filter:blur(2px);
+    transition:opacity .3s ease,transform 6s linear;
+}
+.rays.show{opacity:.7;transform:rotate(180deg);}
+
+/* Coins falling */
+.coin{
+    position:absolute;
+    width:20px;height:20px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff8c2 0%,var(--gold) 45%,#b8860b 100%);
+    box-shadow:0 0 10px var(--gold),0 0 18px rgba(255,215,0,.6);
+    z-index:55;pointer-events:none;
+    top:-30px;
+    animation:coinDrop linear forwards;
+}
+@keyframes coinDrop{
+    0%{transform:translateY(0) rotate(0);opacity:0;}
+    10%{opacity:1;}
+    90%{opacity:1;}
+    100%{transform:translateY(110vh) rotate(720deg);opacity:.7;}
+}
+
+/* Win row glow when matched */
+.reel.win::before,.reel.win::after{opacity:.4;}
+.reel.win{
+    border-color:var(--gold);
+    box-shadow:
+        inset 0 0 18px rgba(255,215,0,.45),
+        0 0 24px rgba(255,215,0,.7);
+    animation:winFlash .35s ease-in-out 4 alternate;
+}
+@keyframes winFlash{
+    0%{box-shadow:inset 0 0 18px rgba(255,215,0,.4),0 0 18px rgba(255,215,0,.5);}
+    100%{box-shadow:inset 0 0 28px rgba(255,215,0,.9),0 0 48px rgba(255,215,0,1);}
+}
+
+/* Spin shake of whole machine on jackpot stop */
+@keyframes machineShake{
+    0%,100%{transform:translate(0,0);}
+    20%{transform:translate(-4px,2px);}
+    40%{transform:translate(4px,-3px);}
+    60%{transform:translate(-3px,-2px);}
+    80%{transform:translate(3px,2px);}
+}
+.machine.shake{animation:machineShake .5s ease;}
+</style>
+</head>
+<body>
+
+<div class="stage">
+    <div class="machine" id="machine">
+        <div class="brand">WIN&nbsp;·&nbsp;WIN</div>
+
+        <div class="reels">
+            <div class="reel" id="reel1"><div class="strip" id="strip1"></div></div>
+            <div class="reel" id="reel2"><div class="strip" id="strip2"></div></div>
+            <div class="reel" id="reel3"><div class="strip" id="strip3"></div></div>
+            <div class="payline"></div>
+        </div>
+
+        <div class="status" id="status">READY</div>
+
+        <div class="rays" id="rays"></div>
+        <div class="jackpot" id="jackpot"><div class="jackpot-text">JACKPOT</div></div>
+    </div>
+</div>
+
+<script>
+// Символы (классы для стилизации)
+const SYMBOLS = [
+    {cls:'seven',    txt:'7'},
+    {cls:'cherry',   txt:'🍒'},
+    {cls:'diamond',  txt:'💎'},
+    {cls:'bell',     txt:'🔔'},
+    {cls:'star',     txt:'★'},
+    {cls:'bar',      txt:'BAR'},
+];
+
+const CELL_H = 140;   // высота одной ячейки в px (должна совпадать с CSS)
+const STRIP_LEN = 40; // длина полосы (символов)
+
+// Случайный символ из набора
+const randSym = () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+
+// Заполнить барабан случайными символами + гарантированно положить заданный символ в нужную позицию
+function buildStrip(stripEl, finalSymbol, finalIndex){
+    stripEl.innerHTML = '';
+    for(let i = 0; i < STRIP_LEN; i++){
+        const s = (i === finalIndex) ? finalSymbol : randSym();
+        const c = document.createElement('div');
+        c.className = 'cell ' + s.cls;
+        c.textContent = s.txt;
+        stripEl.appendChild(c);
+    }
+}
+
+// Прокрутить барабан так, чтобы centered ячейка с indexFinal оказалась на payline
+// Контейнер reel высотой 3*CELL_H, payline в центре (т.е. на CELL_H..2*CELL_H — это видимый средний слот)
+// Чтобы символ с индексом i оказался посередине: translateY = -(i * CELL_H - CELL_H)
+function targetY(finalIndex){
+    return -(finalIndex * CELL_H - CELL_H);
+}
+
+function spin(stripEl, durationMs, finalIndex){
+    return new Promise(resolve => {
+        const targetTop = targetY(finalIndex);
+        // Сначала быстрый "разгон" сверху — установим стартовую позицию вверху
+        stripEl.style.transition = 'none';
+        stripEl.style.transform  = `translateY(${-CELL_H * (STRIP_LEN - 6)}px)`;
+        // Форсим reflow чтобы transition сработал
+        void stripEl.offsetHeight;
+        // Едем к финальной позиции
+        stripEl.style.transition = `transform ${durationMs}ms cubic-bezier(.18,.55,.25,1)`;
+        stripEl.style.transform  = `translateY(${targetTop}px)`;
+        setTimeout(resolve, durationMs + 30);
+    });
+}
+
+// Главный сценарий
+async function runJackpotSequence(){
+    const strip1 = document.getElementById('strip1');
+    const strip2 = document.getElementById('strip2');
+    const strip3 = document.getElementById('strip3');
+    const reels  = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+    const status = document.getElementById('status');
+    const jackpot = document.getElementById('jackpot');
+    const rays    = document.getElementById('rays');
+    const machine = document.getElementById('machine');
+
+    // Сбрасываем
+    reels.forEach(r => r.classList.remove('win'));
+    jackpot.classList.remove('show');
+    rays.classList.remove('show');
+    status.textContent = 'READY';
+
+    await wait(700);
+
+    // === SPIN 1 — быстрый, проигрыш ===
+    status.textContent = 'SPIN 1';
+    const finalIdx1 = 20;
+    buildStrip(strip1, {cls:'cherry',  txt:'🍒'}, finalIdx1);
+    buildStrip(strip2, {cls:'diamond', txt:'💎'}, finalIdx1);
+    buildStrip(strip3, {cls:'bell',    txt:'🔔'}, finalIdx1);
+    await Promise.all([
+        spin(strip1, 1300, finalIdx1),
+        spin(strip2, 1500, finalIdx1),
+        spin(strip3, 1700, finalIdx1),
+    ]);
+    status.textContent = 'NO WIN';
+    await wait(450);
+
+    // === SPIN 2 — быстрый, проигрыш ===
+    status.textContent = 'SPIN 2';
+    const finalIdx2 = 22;
+    buildStrip(strip1, {cls:'bar',     txt:'BAR'}, finalIdx2);
+    buildStrip(strip2, {cls:'star',    txt:'★'},   finalIdx2);
+    buildStrip(strip3, {cls:'diamond', txt:'💎'},  finalIdx2);
+    await Promise.all([
+        spin(strip1, 1300, finalIdx2),
+        spin(strip2, 1500, finalIdx2),
+        spin(strip3, 1700, finalIdx2),
+    ]);
+    status.textContent = 'NO WIN';
+    await wait(550);
+
+    // === SPIN 3 — медленный, JACKPOT 7-7-7 ===
+    status.textContent = 'SPIN 3';
+    const finalIdx3 = 24;
+    const SEVEN = {cls:'seven', txt:'7'};
+    buildStrip(strip1, SEVEN, finalIdx3);
+    buildStrip(strip2, SEVEN, finalIdx3);
+    buildStrip(strip3, SEVEN, finalIdx3);
+
+    // Каждый барабан останавливается по очереди: 1500 / 2100 / 2900 мс
+    spin(strip1, 1500, finalIdx3).then(() => reels[0].classList.add('win'));
+    spin(strip2, 2100, finalIdx3).then(() => reels[1].classList.add('win'));
+    await spin(strip3, 2900, finalIdx3);
+    reels[2].classList.add('win');
+
+    // === JACKPOT! ===
+    status.textContent = '🎰 JACKPOT 🎰';
+    machine.classList.add('shake');
+    jackpot.classList.add('show');
+    rays.classList.add('show');
+    spawnCoins(60);
+    setTimeout(() => machine.classList.remove('shake'), 600);
+
+    // Держим джекпот на экране
+    await wait(3500);
+}
+
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function spawnCoins(count){
+    for(let i = 0; i < count; i++){
+        const c = document.createElement('div');
+        c.className = 'coin';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.width = c.style.height = (12 + Math.random() * 16) + 'px';
+        c.style.animationDuration = (2.2 + Math.random() * 2) + 's';
+        c.style.animationDelay = (Math.random() * 0.8) + 's';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 5000);
+    }
+}
+
+// URL-параметры
+const params = new URLSearchParams(window.location.search);
+const SINGLE = params.get('single') === '1';   // запустить один раз и остановиться
+const LOOP_DELAY = parseInt(params.get('delay') || '1500', 10); // пауза между циклами
+
+async function mainLoop(){
+    while(true){
+        await runJackpotSequence();
+        if(SINGLE) break;
+        await wait(LOOP_DELAY);
+    }
+}
+
+// Старт после загрузки
+window.addEventListener('load', () => {
+    // Маленькая задержка чтобы запись экрана успела захватить начальное состояние
+    setTimeout(mainLoop, 600);
+});
+
+// Перезапуск по клику/тапу (удобно если SINGLE)
+document.addEventListener('click', () => {
+    if(SINGLE) window.location.reload();
+});
+</script>
+</body>
+</html>
